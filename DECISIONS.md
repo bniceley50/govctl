@@ -72,3 +72,15 @@ A SUPERSEDED entry MUST name a successor that exists in this file.
   ones. Mutually exclusive with `--force`. `--dry-run` reports add-vs-keep.
 - **Consequences:** govctl can be adopted incrementally on a live project without risk to
   existing governance files.
+
+### D007 - Decision references must match the zero-padded ID width
+- **Status:** LOCKED
+- **Date:** 2026-06-03
+- **Context:** Validating GravenSpire, govctl flagged `D30`/`D60`/`D90` as orphaned and silently
+  counted `D1`/`D7`/`D14` as references - all of which are Day-N retention markers in an analytics
+  doc, not decisions. The bare `D<digits>` pattern collides with common notation. This is exactly
+  the false-positive failure mode the RED_TEAM premortem warned would erode trust.
+- **Decision:** In the repo scan, a token only counts as a decision reference if its digit width
+  is at least the minimum width of defined decision IDs (default 3, matching the `D001` convention).
+- **Consequences:** Analytics-style `D7`/`D30` no longer masquerade as references. References must
+  be written like real decision IDs (`D001`). Decision *definitions* remain permissive.

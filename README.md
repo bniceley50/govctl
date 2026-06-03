@@ -78,6 +78,8 @@ them from tripping the orphan check (see decision D003):
 - **`.govctlignore`** - glob-lite patterns for whole paths (`target/`, `tests/`, `*.lock`).
 - **Inline markers** - put `govctl:ignore` on a line to skip it, or bracket a block with
   `govctl:ignore-start` / `govctl:ignore-end`.
+- **Write references like IDs** - a reference must be zero-padded to your decision-ID width
+  (`D001`), so analytics-style notation such as `D7` or `D30` is never mistaken for a reference.
 
 ## CI
 
@@ -88,7 +90,7 @@ Add governance checks to any repo in one step. Copy
 PR (see decision D004).
 
 ```yaml
-- uses: bniceley50/govctl/.github/actions/govctl-validate@v0.3.0
+- uses: bniceley50/govctl/.github/actions/govctl-validate@v0.3.1
   with:
     path: "."
     strict: "true"

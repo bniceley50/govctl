@@ -88,6 +88,19 @@ pub fn run(root: &Path, strict: bool) -> Result<bool> {
 
     // Scan the repo + git history for references.
     let references = repo_scan::scan(root);
+    // A token only counts as a decision reference if it is written like a decision ID: zero-padded
+    // to at least the width used in the log (e.g. `D001`). This keeps analytics-style notation such
+    // as `D30` (day-30 retention) or `D7` from masquerading as references to decisions 30 / 7.
+    // See D007.
+    let min_id_digits = decisions
+        .iter()
+        .map(|d| d.id.len().saturating_sub(1))
+        .min()
+        .unwrap_or(3);
+    let references: Vec<repo_scan::Reference> = references
+        .into_iter()
+        .filter(|r| r.raw.len().saturating_sub(1) >= min_id_digits)
+        .collect();
     let referenced_nums: HashSet<u32> = references.iter().map(|r| r.num).collect();
 
     // Check 3: honored decisions must exist and be LOCKED.

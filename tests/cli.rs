@@ -118,6 +118,23 @@ fn init_merge_dry_run_writes_nothing() {
 }
 
 #[test]
+fn short_d_notation_is_not_treated_as_a_reference() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path();
+    // Decisions use the 3-digit convention.
+    scaffold(dir, "# Decisions\n\n## D001 - Real\n- **Status:** LOCKED\n", "[]");
+    // Analytics-style Day-N markers must NOT be read as references to decisions 1/7/30/...
+    fs::write(dir.join("notes.md"), "Retention cohort: D1 D7 D14 D30 D60 D90\n").unwrap();
+
+    govctl()
+        .args(["validate", "."])
+        .current_dir(dir)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("0 error(s)"));
+}
+
+#[test]
 fn init_merge_and_force_conflict() {
     let tmp = tempfile::tempdir().unwrap();
     govctl()

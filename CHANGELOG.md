@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 - 2026-06-03
+
+- Precision fix (found validating a real Unity repo): a token now only counts as a decision
+  reference if it is zero-padded to the decision-ID width (e.g. `D001`). Analytics-style notation
+  like `D7` / `D30` (day-N retention) no longer masquerades as a reference or a false orphan.
+
 ## 0.3.0 - 2026-06-03
 
 - `init --merge`: adopt govctl on an existing project by adding only the missing governance
