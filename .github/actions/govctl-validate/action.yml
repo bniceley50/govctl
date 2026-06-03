@@ -1,0 +1,33 @@
+name: "govctl validate"
+description: "Install govctl and validate a project's governance stack for drift."
+inputs:
+  path:
+    description: "Directory to validate."
+    required: false
+    default: "."
+  strict:
+    description: "Treat warnings as failures."
+    required: false
+    default: "true"
+  version:
+    description: "govctl version (git ref / release tag) to install."
+    required: false
+    default: "v0.2.0"
+runs:
+  using: "composite"
+  steps:
+    - name: Install govctl
+      shell: bash
+      env:
+        GOVCTL_REPO: "bniceley50/govctl"
+        GOVCTL_VERSION: ${{ inputs.version }}
+        INSTALL_DIR: "${{ runner.temp }}/govctl-bin"
+      run: |
+        bash "${{ github.action_path }}/install.sh"
+        echo "${{ runner.temp }}/govctl-bin" >> "$GITHUB_PATH"
+    - name: Validate
+      shell: bash
+      run: |
+        ARGS=(validate "${{ inputs.path }}")
+        if [ "${{ inputs.strict }}" = "true" ]; then ARGS+=(--strict); fi
+        govctl "${ARGS[@]}"

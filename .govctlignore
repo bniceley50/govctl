@@ -1,0 +1,8 @@
+# .govctlignore for govctl itself.
+# Build artifacts and lockfiles
+target/
+*.lock
+# Integration tests contain illustrative decision ids that are not real decisions
+tests/
+# Version control
+.git/

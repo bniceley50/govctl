@@ -1,0 +1,11 @@
+# Sprint status for {{PROJECT_NAME}} - kept in sync with DECISIONS.md.
+# `govctl validate` checks that every id under honors_decisions is LOCKED in DECISIONS.md.
+project: {{PROJECT_NAME}}
+updated: "{{DATE}}"
+sprint: 1
+status: planning
+goals:
+  - Describe this sprint's primary goal here.
+# Decisions this sprint's work depends on. Each must be LOCKED in DECISIONS.md.
+# Example (illustrative only): honors_decisions: [D001, D002]   # govctl:ignore
+honors_decisions: []

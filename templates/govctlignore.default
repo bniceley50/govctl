@@ -1,0 +1,17 @@
+# .govctlignore - paths that `govctl validate` should NOT scan for decision references.
+# Glob-lite: `*` matches within a path segment, a trailing `/` matches a directory by name.
+
+# Build artifacts
+target/
+build/
+dist/
+node_modules/
+
+# Dependency lockfiles
+*.lock
+
+# Test fixtures often contain illustrative D-numbers that aren't real decisions
+tests/
+
+# Version control
+.git/

@@ -1,0 +1,21 @@
+# Drop-in governance check for ANY repo that has a govctl stack.
+# Copy this file to .github/workflows/governance.yml in your project. That's it.
+name: Governance
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so govctl can scan commit messages for D-refs
+      - name: Validate governance stack
+        uses: bniceley50/govctl/.github/actions/govctl-validate@v0.2.0
+        with:
+          path: "."
+          strict: "true"

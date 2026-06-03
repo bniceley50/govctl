@@ -1,0 +1,15 @@
+# Sprint status for govctl - kept in sync with DECISIONS.md.
+# govctl validate checks that every id under honors_decisions is LOCKED in DECISIONS.md.
+project: govctl
+updated: "2026-06-03"
+sprint: 3
+status: in-progress
+goals:
+  - Ship v0.2 drift detection (orphan refs, supersede chains, dangling LOCKED).
+  - Provide CI integration (composite action + drop-in workflow).
+# Decisions this sprint's work depends on. Each must be LOCKED in DECISIONS.md.
+honors_decisions:
+  - D001
+  - D002
+  - D003
+  - D004
