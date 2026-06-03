@@ -7,8 +7,11 @@ build/
 dist/
 node_modules/
 
-# Dependency lockfiles
+# Dependency lockfiles (hashes/versions collide with D-number notation)
 *.lock
+pnpm-lock.yaml
+package-lock.json
+npm-shrinkwrap.json
 
 # Test fixtures often contain illustrative D-numbers that aren't real decisions
 tests/

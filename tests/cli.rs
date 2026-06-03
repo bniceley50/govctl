@@ -135,6 +135,23 @@ fn short_d_notation_is_not_treated_as_a_reference() {
 }
 
 #[test]
+fn pnpm_lockfile_is_ignored_by_default() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path();
+    // No .govctlignore is written, so this relies on the built-in defaults.
+    scaffold(dir, "# Decisions\n\n## D001 - Real\n- **Status:** LOCKED\n", "[]");
+    // A hash fragment that looks like a 3-digit decision reference, in a pnpm lockfile.
+    fs::write(dir.join("pnpm-lock.yaml"), "  /pkg@1.0.0:\n    resolution: {integrity: D090deadbeef}\n").unwrap();
+
+    govctl()
+        .args(["validate", "."])
+        .current_dir(dir)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("0 error(s)"));
+}
+
+#[test]
 fn init_merge_and_force_conflict() {
     let tmp = tempfile::tempdir().unwrap();
     govctl()

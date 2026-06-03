@@ -29,7 +29,17 @@ pub struct IgnoreSet {
 impl IgnoreSet {
     /// Load `.govctlignore` from `root` (if present) and prepend the built-in defaults.
     pub fn load(root: &Path) -> Self {
-        let mut patterns: Vec<String> = vec![".git/".into(), "target/".into()];
+        // Built-in defaults applied even when no .govctlignore exists. Lockfiles carry hash and
+        // version strings that collide with D-number notation (a pnpm integrity field can contain
+        // a token that looks like a decision id), and never hold real references. See D007.
+        let mut patterns: Vec<String> = vec![
+            ".git/".into(),
+            "target/".into(),
+            "*.lock".into(),
+            "pnpm-lock.yaml".into(),
+            "package-lock.json".into(),
+            "npm-shrinkwrap.json".into(),
+        ];
         if let Ok(contents) = std::fs::read_to_string(root.join(".govctlignore")) {
             for line in contents.lines() {
                 let line = line.trim();

@@ -1,6 +1,6 @@
 [package]
 name = "govctl"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 description = "Governance-stack scaffolder and decision-drift detector"
 license = "MIT"

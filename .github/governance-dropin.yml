@@ -15,7 +15,7 @@ jobs:
         with:
           fetch-depth: 0   # full history so govctl can scan commit messages for D-refs
       - name: Validate governance stack
-        uses: bniceley50/govctl/.github/actions/govctl-validate@v0.3.1
+        uses: bniceley50/govctl/.github/actions/govctl-validate@v0.3.2
         with:
           path: "."
           strict: "true"

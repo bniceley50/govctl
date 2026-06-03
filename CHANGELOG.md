@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2 - 2026-06-03
+
+- Ignore dependency lockfiles by default (`*.lock`, `pnpm-lock.yaml`, `package-lock.json`,
+  `npm-shrinkwrap.json`). Found validating a Next.js repo: a hash fragment in `pnpm-lock.yaml`
+  was reported as an orphaned reference. Lockfiles are now skipped even without a project
+  `.govctlignore`.
+
 ## 0.3.1 - 2026-06-03
 
 - Precision fix (found validating a real Unity repo): a token now only counts as a decision

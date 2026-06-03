@@ -90,7 +90,7 @@ Add governance checks to any repo in one step. Copy
 PR (see decision D004).
 
 ```yaml
-- uses: bniceley50/govctl/.github/actions/govctl-validate@v0.3.1
+- uses: bniceley50/govctl/.github/actions/govctl-validate@v0.3.2
   with:
     path: "."
     strict: "true"
