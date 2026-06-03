@@ -75,8 +75,8 @@ them from tripping the orphan check (see decision D003):
 ## CI
 
 Add governance checks to any repo in one step. Copy
-[`governance-dropin.yml`](.github/workflows/governance-dropin.yml) to
-`.github/workflows/governance.yml` - it calls the reusable composite action, which installs
+[`governance-dropin.yml`](.github/governance-dropin.yml) to
+`.github/workflows/governance.yml` in your project - it calls the reusable composite action, which installs
 `govctl` (prebuilt-binary fast path, source-build fallback) and runs `validate --strict` on every
 PR (see decision D004).
 
