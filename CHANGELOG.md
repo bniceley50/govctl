@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 - 2026-06-03
+
+- `init --merge`: adopt govctl on an existing project by adding only the missing governance
+  files; existing files are never touched. Mutually exclusive with `--force`; honors `--dry-run`.
+
 ## 0.2.1 - 2026-06-03
 
 Parser robustness, found by testing against real decision logs.

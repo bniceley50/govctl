@@ -61,3 +61,14 @@ A SUPERSEDED entry MUST name a successor that exists in this file.
   `D<digits>`, and parse strictly on `&str`/`chars` (never cast bytes to `char`).
 - **Consequences:** govctl is compatible with real-world `##`-style logs and preserves non-ASCII
   titles. Regression tests cover both the heading level and the multibyte path.
+
+### D006 - `init --merge` for adopting govctl on existing projects
+- **Status:** LOCKED
+- **Date:** 2026-06-03
+- **Context:** Real projects already have a partial stack (e.g. their own DECISIONS.md and
+  CLAUDE.md). Plain `init` refuses to clobber, and `--force` would destroy the hand-authored
+  decision log - so there was no safe way to adopt govctl on an existing repo.
+- **Decision:** Add `init --merge`: write only the files that are missing, never touch existing
+  ones. Mutually exclusive with `--force`. `--dry-run` reports add-vs-keep.
+- **Consequences:** govctl can be adopted incrementally on a live project without risk to
+  existing governance files.

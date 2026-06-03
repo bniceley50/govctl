@@ -75,6 +75,59 @@ fn init_refuses_to_clobber_then_force_overwrites() {
 }
 
 #[test]
+fn init_merge_adds_only_missing_and_preserves_existing() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path();
+    // Simulate a project with a partial, hand-authored stack.
+    let custom = "# my real decisions\n\n## D001 - Keep me\n- **Status:** LOCKED\n";
+    fs::write(dir.join("DECISIONS.md"), custom).unwrap();
+    fs::write(dir.join("CLAUDE.md"), "# my real CLAUDE\n").unwrap();
+
+    govctl()
+        .args(["init", ".", "--merge"])
+        .current_dir(dir)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("added"))
+        .stdout(predicate::str::contains("kept (unchanged)"));
+
+    // Existing files are byte-for-byte preserved.
+    assert_eq!(fs::read_to_string(dir.join("DECISIONS.md")).unwrap(), custom);
+    assert_eq!(fs::read_to_string(dir.join("CLAUDE.md")).unwrap(), "# my real CLAUDE\n");
+    // Missing files were added.
+    for name in ["AGENTS.md", "RED_TEAM.md", "RUNBOOK.md", "sprint-status.yaml", "lessons.md", ".govctlignore"] {
+        assert!(dir.join(name).exists(), "{name} should have been added");
+    }
+}
+
+#[test]
+fn init_merge_dry_run_writes_nothing() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path();
+    fs::write(dir.join("DECISIONS.md"), "# existing\n").unwrap();
+
+    govctl()
+        .args(["init", ".", "--merge", "--dry-run"])
+        .current_dir(dir)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("would add"))
+        .stdout(predicate::str::contains("keep"));
+
+    assert!(!dir.join("AGENTS.md").exists(), "dry-run must not write");
+}
+
+#[test]
+fn init_merge_and_force_conflict() {
+    let tmp = tempfile::tempdir().unwrap();
+    govctl()
+        .args(["init", ".", "--merge", "--force"])
+        .current_dir(tmp.path())
+        .assert()
+        .failure();
+}
+
+#[test]
 fn init_dry_run_writes_nothing() {
     let tmp = tempfile::tempdir().unwrap();
     govctl()

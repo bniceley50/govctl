@@ -31,6 +31,13 @@ Writes seven governance files (`CLAUDE.md`, `AGENTS.md`, `DECISIONS.md`, `RED_TE
 `RUNBOOK.md`, `sprint-status.yaml`, `lessons.md`), a `.govctlignore`, and `.govctl/manifest.toml`.
 Refuses to overwrite without `--force`; preview with `--dry-run`.
 
+Adopting govctl on a project that already has some of these files? Use `--merge` to add only the
+missing ones and leave your existing files untouched:
+
+```
+govctl init . --merge        # add missing governance files, keep what's already there
+```
+
 ### Check for drift
 
 ```
@@ -81,7 +88,7 @@ Add governance checks to any repo in one step. Copy
 PR (see decision D004).
 
 ```yaml
-- uses: bniceley50/govctl/.github/actions/govctl-validate@v0.2.1
+- uses: bniceley50/govctl/.github/actions/govctl-validate@v0.3.0
   with:
     path: "."
     strict: "true"

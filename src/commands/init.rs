@@ -6,7 +6,19 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Scaffold the seven governance files plus `.govctlignore` and `.govctl/manifest.toml`.
-pub fn run(path: &Path, project_name: Option<&str>, force: bool, dry_run: bool) -> Result<()> {
+///
+/// Three modes (see D006):
+///   * default - refuse if any target file already exists.
+///   * `force` - overwrite everything.
+///   * `merge` - add only the files that are missing; never touch existing ones. This is how you
+///     adopt govctl on a project that already has a partial stack.
+pub fn run(
+    path: &Path,
+    project_name: Option<&str>,
+    force: bool,
+    merge: bool,
+    dry_run: bool,
+) -> Result<()> {
     let project = resolve_project_name(path, project_name);
     let date = today_iso();
 
@@ -23,20 +35,67 @@ pub fn run(path: &Path, project_name: Option<&str>, force: bool, dry_run: bool) 
         manifest(&project, &date),
     ));
 
+    let rel = |p: &Path| {
+        p.strip_prefix(path)
+            .unwrap_or(p)
+            .to_string_lossy()
+            .into_owned()
+    };
+
+    // MERGE: add only missing files; leave existing ones untouched.
+    if merge {
+        let missing: Vec<&(PathBuf, String)> = planned.iter().filter(|(p, _)| !p.exists()).collect();
+        let present: Vec<String> = planned
+            .iter()
+            .filter(|(p, _)| p.exists())
+            .map(|(p, _)| rel(p))
+            .collect();
+
+        if dry_run {
+            println!("govctl init --merge (dry run) into {}:", path.display());
+            for (p, _) in &missing {
+                println!("  + would add  {}", rel(p));
+            }
+            for f in &present {
+                println!("  = keep       {f}");
+            }
+            return Ok(());
+        }
+
+        if missing.is_empty() {
+            println!("govctl init --merge: nothing to add; all {} files already present.", planned.len());
+            return Ok(());
+        }
+
+        fs::create_dir_all(path).with_context(|| format!("creating {}", path.display()))?;
+        for (p, body) in &missing {
+            if let Some(parent) = p.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            fs::write(p, body).with_context(|| format!("writing {}", p.display()))?;
+        }
+
+        println!("govctl init --merge - added {} missing file(s) to {}", missing.len(), path.display());
+        for (p, _) in &missing {
+            println!("  + {}", rel(p));
+        }
+        for f in &present {
+            println!("  = kept (unchanged) {f}");
+        }
+        println!("\nNext: run `govctl validate .` to check for drift.");
+        return Ok(());
+    }
+
+    // DEFAULT: refuse to clobber unless --force.
     if !force {
         let existing: Vec<String> = planned
             .iter()
             .filter(|(p, _)| p.exists())
-            .map(|(p, _)| {
-                p.strip_prefix(path)
-                    .unwrap_or(p)
-                    .to_string_lossy()
-                    .into_owned()
-            })
+            .map(|(p, _)| rel(p))
             .collect();
         if !existing.is_empty() {
             anyhow::bail!(
-                "refusing to overwrite existing files: {} (re-run with --force)",
+                "refusing to overwrite existing files: {} (use --merge to add only missing files, or --force to overwrite)",
                 existing.join(", ")
             );
         }
@@ -45,7 +104,7 @@ pub fn run(path: &Path, project_name: Option<&str>, force: bool, dry_run: bool) 
     if dry_run {
         println!("govctl init (dry run) - would scaffold into {}:", path.display());
         for (p, _) in &planned {
-            println!("  + {}", p.strip_prefix(path).unwrap_or(p).display());
+            println!("  + {}", rel(p));
         }
         return Ok(());
     }
@@ -65,7 +124,7 @@ pub fn run(path: &Path, project_name: Option<&str>, force: bool, dry_run: bool) 
     );
     println!("  project: {project}");
     for (p, _) in &planned {
-        println!("  + {}", p.strip_prefix(path).unwrap_or(p).display());
+        println!("  + {}", rel(p));
     }
     println!("\nNext: edit DECISIONS.md, then run `govctl validate .` to check for drift.");
     Ok(())

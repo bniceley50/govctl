@@ -42,6 +42,11 @@ enum Command {
         #[arg(long)]
         force: bool,
 
+        /// Add only the files that are missing; never touch existing ones (for adopting govctl
+        /// on a project that already has a partial stack).
+        #[arg(long, conflicts_with = "force")]
+        merge: bool,
+
         /// Print what would be written without touching the filesystem.
         #[arg(long)]
         dry_run: bool,
@@ -66,8 +71,9 @@ fn main() -> ExitCode {
             path,
             project_name,
             force,
+            merge,
             dry_run,
-        } => commands::init::run(&path, project_name.as_deref(), force, dry_run).map(|_| true),
+        } => commands::init::run(&path, project_name.as_deref(), force, merge, dry_run).map(|_| true),
         Command::Validate { path, strict } => commands::validate::run(&path, strict),
     };
 

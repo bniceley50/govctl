@@ -20,6 +20,7 @@ govctl validate . --strict                   # govctl validates itself
 
 ```
 govctl init <dir> --project-name "My Project"   # scaffold the stack
+govctl init <dir> --merge                        # adopt on an existing project (add missing only)
 govctl validate <dir>                            # check for drift
 govctl validate <dir> --strict                   # CI mode: warnings fail
 ```
