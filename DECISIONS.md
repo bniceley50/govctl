@@ -50,3 +50,14 @@ A SUPERSEDED entry MUST name a successor that exists in this file.
   build-from-source fallback) and runs validate. Other repos reference it with one `uses:` line.
 - **Consequences:** Adding govctl to a repo is a copy-paste of one workflow; install logic is
   centralized and fixed once.
+
+### D005 - Parser accepts any heading level and is UTF-8 safe
+- **Status:** LOCKED
+- **Date:** 2026-06-03
+- **Context:** Tested against real decision logs (GravenSpire, Clinic Notes AI), govctl parsed
+  zero decisions: those logs use `## D001` (level-2) headings and contain em-dash separators.
+  The parser only matched `###`, and `strip_html_comments` corrupted multibyte UTF-8.
+- **Decision:** Recognize a decision heading at any markdown level (`#`..`######`) whose text is
+  `D<digits>`, and parse strictly on `&str`/`chars` (never cast bytes to `char`).
+- **Consequences:** govctl is compatible with real-world `##`-style logs and preserves non-ASCII
+  titles. Regression tests cover both the heading level and the multibyte path.

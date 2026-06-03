@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.1 - 2026-06-03
+
+Parser robustness, found by testing against real decision logs.
+
+- Recognize decision headings at any markdown level (`## D001` as well as `### D001`). Real-world
+  logs use `##`; the parser previously matched only `###` and found zero decisions.
+- Fix UTF-8 corruption: `strip_html_comments` no longer casts bytes to `char`, so em-dashes and
+  other multibyte characters in titles survive intact.
+- Release pipeline: race-free asset uploads and a resilient aarch64 cross-linker install.
+
 ## 0.2.0 - 2026-06-03
 
 Drift detection - the centerpiece.

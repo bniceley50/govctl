@@ -11,8 +11,8 @@ decision log and its actual code/git history (`validate`). It dogfoods its own r
 
 - Decisions live in `DECISIONS.md` and are enforced by `govctl validate . --strict`. Do not
   contradict a LOCKED decision; supersede it explicitly instead.
-- Keep the source ASCII-only. Non-ASCII punctuation (em-dashes, smart quotes) has caused
-  encoding mismatches on this toolchain; use plain hyphens and straight quotes.
+- The parser must be UTF-8 safe: decision logs in the wild contain em-dashes and other
+  multibyte characters. Never cast bytes to `char`; operate on `&str`/`chars`. See D005.
 - Verify before claiming done: `cargo test`, `cargo clippy --all-targets -- -D warnings`, and
   `govctl validate . --strict` must all pass.
 

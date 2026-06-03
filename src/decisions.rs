@@ -37,27 +37,41 @@ pub struct DRef {
 }
 
 /// Remove `<!-- ... -->` HTML comment spans (including multi-line ones) from `text`,
-/// preserving line count so reported line numbers stay accurate.
+/// preserving line count so reported line numbers stay accurate. Operates on `&str` slices
+/// (the `<!--`/`-->` markers are ASCII), so multibyte UTF-8 content is preserved intact.
 pub fn strip_html_comments(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let bytes = text.as_bytes();
-    let mut i = 0;
-    let mut in_comment = false;
-    while i < bytes.len() {
-        if !in_comment && bytes[i..].starts_with(b"<!--") {
-            in_comment = true;
-            i += 4;
-        } else if in_comment && bytes[i..].starts_with(b"-->") {
-            in_comment = false;
-            i += 3;
-        } else {
-            // Preserve newlines so downstream line numbering is unaffected.
-            if bytes[i] == b'\n' {
+    // Helper: append only the newlines from `s`, to keep line numbers stable across removals.
+    fn push_newlines(out: &mut String, s: &str) {
+        for c in s.chars() {
+            if c == '\n' {
                 out.push('\n');
-            } else if !in_comment {
-                out.push(bytes[i] as char);
             }
-            i += 1;
+        }
+    }
+
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    loop {
+        match rest.find("<!--") {
+            None => {
+                out.push_str(rest);
+                break;
+            }
+            Some(start) => {
+                out.push_str(&rest[..start]);
+                let after = &rest[start + 4..];
+                match after.find("-->") {
+                    None => {
+                        // Unterminated comment: drop the body but keep its newlines.
+                        push_newlines(&mut out, after);
+                        break;
+                    }
+                    Some(end) => {
+                        push_newlines(&mut out, &after[..end]);
+                        rest = &after[end + 3..];
+                    }
+                }
+            }
         }
     }
     out
@@ -102,11 +116,16 @@ pub fn parse(contents: &str) -> Vec<Decision> {
 
     for line in cleaned.lines() {
         let trimmed = line.trim_start();
-        if let Some(rest) = trimmed.strip_prefix("###") {
-            if let Some(d) = parse_heading(rest.trim()) {
+        // A decision heading is a markdown heading at ANY level (`#`..`######`) whose text is
+        // `D<digits>`. Projects in the wild use `## D001` and `### D001` interchangeably, so we
+        // match on "one-or-more '#' then whitespace" rather than a fixed level.
+        if let Some(rest) = strip_heading_marker(trimmed) {
+            if let Some(d) = parse_heading(rest) {
                 decisions.push(d);
+                continue;
             }
-        } else if let Some(d) = decisions.last_mut() {
+        }
+        if let Some(d) = decisions.last_mut() {
             if let Some(status) = parse_status_line(trimmed) {
                 // First status line after a heading wins.
                 if matches!(d.status, Status::Other(ref s) if s.is_empty()) {
@@ -116,6 +135,21 @@ pub fn parse(contents: &str) -> Vec<Decision> {
         }
     }
     decisions
+}
+
+/// If `line` is a markdown heading (`#`..`######` followed by whitespace), return the heading
+/// text with the marker stripped; otherwise `None`.
+fn strip_heading_marker(line: &str) -> Option<&str> {
+    if !line.starts_with('#') {
+        return None;
+    }
+    let rest = line.trim_start_matches('#');
+    // Require whitespace between the hashes and the text (a real ATX heading).
+    if rest.starts_with(char::is_whitespace) {
+        Some(rest.trim())
+    } else {
+        None
+    }
 }
 
 /// Parse a heading like `D001 - Initial architecture` into a partial `Decision`
@@ -200,7 +234,29 @@ Template instructions:
 ### D001 - Real decision
 - **Status:** LOCKED
 ";
+
+    // Real-world style: level-2 headings, capitalized status with no leading dash.
+    const TWO_HASH: &str = "\
+# DECISIONS.md - Architecture Decisions Log
+
+## D001 - Stack Lock
+**Date:** 2026-04-21
+**Status:** Locked
+
+## D002 - Deferred thing
+**Status:** Locked
+";
     // govctl:ignore-end
+
+    #[test]
+    fn parses_level_two_headings() {
+        let d = parse(TWO_HASH);
+        assert_eq!(d.len(), 2, "should parse ## D-headings and ignore the title heading");
+        assert_eq!(d[0].id, "D001");
+        assert_eq!(d[0].title, "Stack Lock");
+        assert_eq!(d[0].status, Status::Locked);
+        assert_eq!(d[1].id, "D002");
+    }
 
     #[test]
     fn parses_three_decisions() {
@@ -246,5 +302,24 @@ Template instructions:
         let src = "a\n<!-- x\ny -->\nb\n";
         let out = strip_html_comments(src);
         assert_eq!(out.lines().count(), src.lines().count());
+    }
+
+    #[test]
+    fn strip_comments_preserves_multibyte_utf8() {
+        // Regression: a previous bytes-as-char implementation corrupted multibyte chars.
+        // U+2014 (EM DASH) outside comments must survive intact.
+        let src = "## D001 \u{2014} Title\n<!-- note \u{2014} here -->\nbody \u{2014} x";
+        let out = strip_html_comments(src);
+        assert!(out.contains('\u{2014}'), "em-dash outside comments must survive");
+        assert!(!out.contains("note"), "comment body should be removed");
+    }
+
+    #[test]
+    fn parses_emdash_heading_title_cleanly() {
+        // The real-world separator is an em-dash; the title must come out clean (no mojibake).
+        let d = parse("## D001 \u{2014} Stack Lock\n**Status:** Locked\n");
+        assert_eq!(d.len(), 1);
+        assert_eq!(d[0].title, "Stack Lock");
+        assert_eq!(d[0].status, Status::Locked);
     }
 }
