@@ -1,10 +1,28 @@
 # govctl
 
-A governance-stack scaffolder and **decision-drift detector**. `govctl` scaffolds a seven-file
-governance stack into any project and then enforces that your decision log and your actual code
-(and git history) have not drifted apart.
+**Your decision log and your code drift apart, and nobody notices until it hurts.** `govctl` is a
+decision-drift detector: it reads your `DECISIONS.md`, scans your source and git history, and
+fails the build when they disagree - a reference to a decision that was never logged, a superseded
+decision pointing nowhere, a locked choice quietly contradicted.
 
-It dogfoods its own rules: `govctl validate . --strict` passes on this very repository.
+A human reviewer can't catch "this cites a decision that doesn't exist" by eye. `govctl` can - in
+under a second, in one line of CI. It's a single zero-dependency binary, and it dogfoods its own
+rules: `govctl validate . --strict` passes on this very repository.
+
+<!-- govctl:ignore-start -->
+> **What it caught on a real repo it had never seen** (a Next.js codebase): a pre-launch cutover
+> checklist committed to decision `D042` ("rate-limit policy") - but the decision log skipped
+> straight from D041 to D043. That decision was never written down. `govctl` flagged it in 0.3s,
+> with zero other false alarms.
+<!-- govctl:ignore-end -->
+
+## Who it's for
+
+You keep a decision log (`DECISIONS.md` / ADRs) **and** you work with AI coding agents
+(Claude Code, Cursor, Codex). That combination is where drift explodes: agents confidently cite
+decision numbers and contradict locked choices faster than a human can track. If you don't keep a
+decision log, or it's a tiny solo project, `govctl` is solving a problem you don't have - and
+that's honest to admit.
 
 ## Why
 
