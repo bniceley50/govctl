@@ -16,6 +16,8 @@ rules: `govctl validate . --strict` passes on this very repository.
 > with zero other false alarms.
 <!-- govctl:ignore-end -->
 
+![govctl flagging a decision cited in a launch checklist that was never logged](docs/demo.gif)
+
 ## Who it's for
 
 You keep a decision log (`DECISIONS.md` / ADRs) **and** you work with AI coding agents
