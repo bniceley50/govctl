@@ -8,8 +8,9 @@ fails the build when they disagree - a reference to a decision that was never lo
 decision pointing nowhere, a locked choice quietly contradicted.
 
 A human reviewer can't catch "this cites a decision that doesn't exist" by eye. `govctl` can - in
-under a second, in one line of CI. It's a single zero-dependency binary, and it dogfoods its own
-rules: `govctl validate . --strict` passes on this very repository.
+under a second, in one line of CI. It's a single self-contained binary (no runtime services or
+dependencies), and it dogfoods its own rules: `govctl validate . --strict` passes on this very
+repository.
 
 <!-- govctl:ignore-start -->
 > **What it caught on a real repo it had never seen** (a Next.js codebase): a pre-launch cutover
@@ -118,7 +119,7 @@ Add governance checks to any repo in one step. Copy
 PR (see decision D004).
 
 ```yaml
-- uses: bniceley50/govctl/.github/actions/govctl-validate@v0.3.2
+- uses: bniceley50/govctl/.github/actions/govctl-validate@v0.3.3
   with:
     path: "."
     strict: "true"
