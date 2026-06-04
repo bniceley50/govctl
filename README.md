@@ -1,5 +1,7 @@
 # govctl
 
+[![crates.io](https://img.shields.io/crates/v/decision-drift.svg)](https://crates.io/crates/decision-drift) [![CI](https://github.com/bniceley50/govctl/actions/workflows/ci.yml/badge.svg)](https://github.com/bniceley50/govctl/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **Your decision log and your code drift apart, and nobody notices until it hurts.** `govctl` is a
 decision-drift detector: it reads your `DECISIONS.md`, scans your source and git history, and
 fails the build when they disagree - a reference to a decision that was never logged, a superseded
