@@ -35,8 +35,11 @@ build failure instead of a surprise six months later.
 ## Install
 
 ```
-cargo install --path .          # from a checkout
-# or grab a prebuilt binary from the Releases page
+# Latest release straight from GitHub, no clone needed (requires Rust):
+cargo install --git https://github.com/bniceley50/govctl --tag v0.3.2
+
+# ...or download a prebuilt binary for your OS (no Rust needed):
+#   https://github.com/bniceley50/govctl/releases
 ```
 
 ## Usage
