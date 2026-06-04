@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.3 - 2026-06-03
+
+- Published to crates.io as `decision-drift` (`cargo install decision-drift`). The package name
+  differs from the binary because `govctl` was already taken on crates.io; the installed command
+  is still `govctl`. No functional changes.
+
 ## 0.3.2 - 2026-06-03
 
 - Ignore dependency lockfiles by default (`*.lock`, `pnpm-lock.yaml`, `package-lock.json`,

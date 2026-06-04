@@ -35,12 +35,15 @@ build failure instead of a surprise six months later.
 ## Install
 
 ```
-# Latest release straight from GitHub, no clone needed (requires Rust):
-cargo install --git https://github.com/bniceley50/govctl --tag v0.3.2
+# From crates.io (requires Rust) - installs the `govctl` command:
+cargo install decision-drift
 
 # ...or download a prebuilt binary for your OS (no Rust needed):
 #   https://github.com/bniceley50/govctl/releases
 ```
+
+> The crate is named `decision-drift` (the obvious `govctl` was already taken on crates.io);
+> the installed command is still `govctl`.
 
 ## Usage
 

@@ -1,12 +1,15 @@
 [package]
-name = "govctl"
-version = "0.3.2"
+name = "decision-drift"
+version = "0.3.3"
 edition = "2021"
-description = "Governance-stack scaffolder and decision-drift detector"
+description = "Detect drift between your DECISIONS.md / ADR log and your actual code and git history. Installs the `govctl` command."
 license = "MIT"
 repository = "https://github.com/bniceley50/govctl"
 readme = "README.md"
+keywords = ["governance", "adr", "decisions", "ci", "documentation"]
+categories = ["command-line-utilities", "development-tools"]
 
+# The package is `decision-drift`; the installed command stays `govctl`.
 [[bin]]
 name = "govctl"
 path = "src/main.rs"
