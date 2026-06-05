@@ -303,3 +303,75 @@ fn orphaned_reference_in_git_commit_fails() {
         .stdout(predicate::str::contains("orphaned reference D310"))
         .stdout(predicate::str::contains("git commit"));
 }
+
+#[test]
+fn validate_json_clean_parses_and_reports_passed() {
+    let tmp = tempfile::tempdir().unwrap();
+    govctl().args(["init", "."]).current_dir(tmp.path()).assert().success();
+
+    let assert = govctl()
+        .args(["validate", ".", "--format", "json"])
+        .current_dir(tmp.path())
+        .assert()
+        .success();
+
+    // Parse stdout AS JSON (not a string-contains), per the contract.
+    let v: serde_json::Value =
+        serde_json::from_slice(&assert.get_output().stdout).expect("stdout must be valid JSON");
+    assert_eq!(v["schemaVersion"], 1);
+    assert_eq!(v["ok"], true);
+    assert_eq!(v["exitReason"], "PASSED");
+    assert!(v["findings"].as_array().unwrap().is_empty());
+}
+
+#[test]
+fn validate_json_failing_emits_structured_finding() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path();
+    scaffold(dir, "# Decisions\n\n## D001 - Real\n- **Status:** LOCKED\n", "[]");
+    fs::create_dir_all(dir.join("src")).unwrap();
+    fs::write(dir.join("src").join("lib.rs"), "// implements D207\n").unwrap();
+
+    let assert = govctl()
+        .args(["validate", ".", "--format", "json"])
+        .current_dir(dir)
+        .assert()
+        .failure(); // exit code identical to human mode
+
+    let v: serde_json::Value =
+        serde_json::from_slice(&assert.get_output().stdout).expect("valid JSON even on failure");
+    assert_eq!(v["ok"], false);
+    assert_eq!(v["exitReason"], "ERRORS");
+    let findings = v["findings"].as_array().unwrap();
+    let orphan = findings
+        .iter()
+        .find(|f| f["code"] == "ORPHANED_REFERENCE")
+        .expect("an ORPHANED_REFERENCE finding");
+    assert_eq!(orphan["decisionId"], "D207");
+    assert_eq!(orphan["suggestedFixKind"], "FIX_REFERENCE");
+    assert_eq!(orphan["source"], "src/lib.rs");
+    assert_eq!(orphan["line"], 1);
+}
+
+#[test]
+fn validate_json_strict_warning_has_exit_reason() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path();
+    // A LOCKED decision referenced nowhere -> a warning, which --strict turns into a failure.
+    scaffold(dir, "# Decisions\n\n## D050 - Ambient\n- **Status:** LOCKED\n", "[]");
+
+    let assert = govctl()
+        .args(["validate", ".", "--format", "json", "--strict"])
+        .current_dir(dir)
+        .assert()
+        .failure();
+
+    let v: serde_json::Value =
+        serde_json::from_slice(&assert.get_output().stdout).expect("valid JSON");
+    assert_eq!(v["ok"], false);
+    assert_eq!(v["exitReason"], "STRICT_WARNINGS");
+    let f = &v["findings"].as_array().unwrap()[0];
+    assert_eq!(f["code"], "DANGLING_LOCKED");
+    assert_eq!(f["severity"], "warning");
+    assert!(f["source"].is_null()); // dangling = referenced nowhere -> null source
+}

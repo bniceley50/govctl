@@ -84,3 +84,17 @@ A SUPERSEDED entry MUST name a successor that exists in this file.
   is at least the minimum width of defined decision IDs (default 3, matching the `D001` convention).
 - **Consequences:** Analytics-style `D7`/`D30` no longer masquerade as references. References must
   be written like real decision IDs (`D001`). Decision *definitions* remain permissive.
+
+### D008 - Machine-readable validate output (`--format json`)
+- **Status:** LOCKED
+- **Date:** 2026-06-04
+- **Context:** Agents and CI need to consume `validate` findings without scraping human text.
+- **Decision:** `validate --format json` emits a stable JSON report to stdout ONLY (human is the
+  default; any non-report output goes to stderr). Top level: `schemaVersion`, `ok`, `strict`,
+  `summary {decisionsDefined, referenced, errors, warnings}`, `findings[]`, `exitReason`. Each
+  finding carries stable `code` and `suggestedFixKind` enums plus `message`, `decisionId`,
+  `source`, `line` (the last three nullable). Exit codes are identical across formats;
+  `exitReason` is one of PASSED | ERRORS | STRICT_WARNINGS.
+- **Consequences:** `code`, `suggestedFixKind`, and `exitReason` values are a contract - changing
+  one is a breaking change that needs a superseding decision. Structural schema changes bump
+  `schemaVersion`.

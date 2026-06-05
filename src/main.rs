@@ -61,6 +61,10 @@ enum Command {
         /// Treat warnings as failures (suitable for CI).
         #[arg(long)]
         strict: bool,
+
+        /// Output format. `human` (default) or `json` (machine-readable report to stdout).
+        #[arg(long, default_value = "human")]
+        format: commands::validate::Format,
     },
 }
 
@@ -74,7 +78,11 @@ fn main() -> ExitCode {
             merge,
             dry_run,
         } => commands::init::run(&path, project_name.as_deref(), force, merge, dry_run).map(|_| true),
-        Command::Validate { path, strict } => commands::validate::run(&path, strict),
+        Command::Validate {
+            path,
+            strict,
+            format,
+        } => commands::validate::run(&path, strict, format),
     };
 
     match result {

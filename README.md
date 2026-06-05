@@ -70,9 +70,15 @@ govctl init . --merge        # add missing governance files, keep what's already
 ### Check for drift
 
 ```
-govctl validate .            # report drift
-govctl validate . --strict   # CI mode: warnings become failures
+govctl validate .                  # report drift (human-readable)
+govctl validate . --strict         # CI mode: warnings become failures
+govctl validate . --format json    # stable machine-readable report (stdout only)
 ```
+
+`--format json` is for CI, bots, and agents: it emits a stable report (`schemaVersion`, `ok`,
+`strict`, `summary`, `findings[]`, `exitReason`) where each finding carries machine-stable `code`
+and `suggestedFixKind` fields, so a tool can branch and propose a fix without scraping text. Exit
+codes are identical to human mode. The schema is a contract (see [`DECISIONS.md`](DECISIONS.md) D008).
 
 `validate` runs these checks:
 
@@ -119,7 +125,7 @@ Add governance checks to any repo in one step. Copy
 PR (see decision D004).
 
 ```yaml
-- uses: bniceley50/govctl/.github/actions/govctl-validate@v0.3.3
+- uses: bniceley50/govctl/.github/actions/govctl-validate@v0.3.4
   with:
     path: "."
     strict: "true"

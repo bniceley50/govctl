@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.4 - 2026-06-04
+
+- `validate --format json`: stable machine-readable report for CI, bots, and agents (D008).
+  Human output is unchanged and remains the default. JSON goes to stdout only; exit codes are
+  identical across formats. Findings carry stable `code` / `suggestedFixKind` enums and nullable
+  `decisionId` / `source` / `line`; top level includes `schemaVersion`, `ok`, `strict`, `summary`,
+  and `exitReason` (PASSED | ERRORS | STRICT_WARNINGS).
+
 ## 0.3.3 - 2026-06-03
 
 - Published to crates.io as `decision-drift` (`cargo install decision-drift`). The package name

@@ -12,7 +12,7 @@ inputs:
   version:
     description: "govctl version (git ref / release tag) to install."
     required: false
-    default: "v0.3.3"
+    default: "v0.3.4"
 runs:
   using: "composite"
   steps:

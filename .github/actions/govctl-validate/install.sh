@@ -2,12 +2,12 @@
 # Install govctl into $INSTALL_DIR. Tries a prebuilt release binary first (fast path),
 # then falls back to building from source. Designed to be testable outside CI:
 #   GOVCTL_REPO    owner/repo or a full git URL (default: bniceley50/govctl)
-#   GOVCTL_VERSION git ref / release tag       (default: v0.3.3)
+#   GOVCTL_VERSION git ref / release tag       (default: v0.3.4)
 #   INSTALL_DIR    where to place the govctl binary
 set -euo pipefail
 
 GOVCTL_REPO="${GOVCTL_REPO:-bniceley50/govctl}"
-GOVCTL_VERSION="${GOVCTL_VERSION:-v0.3.3}"
+GOVCTL_VERSION="${GOVCTL_VERSION:-v0.3.4}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 mkdir -p "$INSTALL_DIR"
 
