@@ -7,6 +7,7 @@
 //!   4. Orphaned references - a `D###` cited in source/git but absent from DECISIONS.md (error).
 //!   5. Supersede-chain integrity - SUPERSEDED entries name an existing successor (error).
 //!   6. Dangling LOCKED - a LOCKED decision referenced nowhere (warning).
+//!   7. Decision identity - no two decisions collapse to the same numeric id (error).
 //!
 //! Output is human-readable by default; `--format json` emits a stable machine-readable report
 //! to stdout for CI, bots, and agents. The JSON contract (codes, fix kinds, exit reasons) is D008.
@@ -47,6 +48,7 @@ enum Code {
     SupersededWithoutSuccessor,
     BrokenSupersedeChain,
     DanglingLocked,
+    DuplicateDecisionId,
 }
 
 /// Stable hint for what kind of fix resolves a finding (D008 contract).
@@ -60,6 +62,7 @@ enum FixKind {
     FixReference,
     AddReference,
     NameSuccessor,
+    FixDecisionId,
 }
 
 /// Why the process exits the way it does (D008 contract).
@@ -143,6 +146,28 @@ pub fn run(root: &Path, strict: bool, format: Format) -> Result<bool> {
         Vec::new()
     };
     let defined_nums: HashSet<u32> = decisions.iter().map(|d| d.num).collect();
+
+    // Check 7 (decision identity): two decisions must not collapse to the same numeric id.
+    // Everything downstream keys decisions by `num` (defined_nums, supersede_map), so a
+    // collision like `D1` and `D01` silently merges two decisions and can hide a supersede
+    // cycle behind last-write-wins map insertion. Surface it as a hard error. (crosstalk run-1)
+    let mut seen_nums: HashMap<u32, &str> = HashMap::new();
+    for d in &decisions {
+        if let Some(prior_id) = seen_nums.insert(d.num, d.id.as_str()) {
+            findings.push(Finding {
+                severity: Severity::Error,
+                code: Code::DuplicateDecisionId,
+                message: format!(
+                    "{} and {} share numeric identity {} - ambiguous decision id",
+                    prior_id, d.id, d.num
+                ),
+                decision_id: Some(d.id.clone()),
+                source: Some("DECISIONS.md".to_string()),
+                line: None,
+                suggested_fix_kind: FixKind::FixDecisionId,
+            });
+        }
+    }
 
     // Check 2: sprint-status.yaml parses; collect honored decisions.
     let mut honored: Vec<String> = Vec::new();

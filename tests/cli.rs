@@ -260,6 +260,46 @@ fn two_decision_supersede_cycle_fails() {
 }
 
 #[test]
+fn duplicate_numeric_decision_id_fails() {
+    // `D1` and `D01` both parse to num 1 with distinct id strings. The validator keys
+    // decisions by num everywhere, so without an identity check they silently merge.
+    // crosstalk run-1 finding (duplicate numeric identity).
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path();
+    scaffold(
+        dir,
+        "# Decisions\n\n### D1 - First spelling\n- **Status:** LOCKED\n\n### D01 - Second spelling\n- **Status:** LOCKED\n",
+        "[]",
+    );
+    govctl()
+        .args(["validate", "."])
+        .current_dir(dir)
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains("share numeric identity"));
+}
+
+#[test]
+fn collision_hidden_supersede_cycle_fails() {
+    // The exact run-1 bypass: a self-cycle on `D01` is overwritten in the num-keyed
+    // supersede map by a valid `D1 -> D2` edge, hiding the cycle. The duplicate-identity
+    // check closes it by failing on the ambiguous numeric id before chain logic matters.
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path();
+    scaffold(
+        dir,
+        "# Decisions\n\n### D01 - Cycle in\n- **Status:** SUPERSEDED (by D01)\n\n### D1 - Override\n- **Status:** SUPERSEDED (by D2)\n\n### D2 - Replacement\n- **Status:** LOCKED\n",
+        "[]",
+    );
+    govctl()
+        .args(["validate", "."])
+        .current_dir(dir)
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains("share numeric identity"));
+}
+
+#[test]
 fn honoring_non_locked_decision_fails() {
     let tmp = tempfile::tempdir().unwrap();
     let dir = tmp.path();
