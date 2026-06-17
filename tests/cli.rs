@@ -226,6 +226,40 @@ fn broken_supersede_chain_fails() {
 }
 
 #[test]
+fn cyclic_supersede_chain_fails() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path();
+    scaffold(
+        dir,
+        "# Decisions\n\n### D001 - Loops\n- **Status:** SUPERSEDED (by D001)\n",
+        "[]",
+    );
+    govctl()
+        .args(["validate", "."])
+        .current_dir(dir)
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains("supersede cycle"));
+}
+
+#[test]
+fn two_decision_supersede_cycle_fails() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path();
+    scaffold(
+        dir,
+        "# Decisions\n\n### D001 - Old\n- **Status:** SUPERSEDED (by D002)\n\n### D002 - Also old\n- **Status:** SUPERSEDED (by D001)\n",
+        "[]",
+    );
+    govctl()
+        .args(["validate", "."])
+        .current_dir(dir)
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains("supersede cycle"));
+}
+
+#[test]
 fn honoring_non_locked_decision_fails() {
     let tmp = tempfile::tempdir().unwrap();
     let dir = tmp.path();
@@ -240,6 +274,41 @@ fn honoring_non_locked_decision_fails() {
         .assert()
         .failure()
         .stdout(predicate::str::contains("not LOCKED"));
+}
+
+#[test]
+fn honoring_unlocked_decision_fails() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path();
+    scaffold(
+        dir,
+        "# Decisions\n\n### D001 - Explicitly not locked\n- **Status:** unlocked\n",
+        "[D001]",
+    );
+    govctl()
+        .args(["validate", "."])
+        .current_dir(dir)
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains("not LOCKED"));
+}
+
+#[test]
+fn oversized_honored_decision_id_does_not_alias_d0() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path();
+    scaffold(
+        dir,
+        "# Decisions\n\n### D0 - Zero\n- **Status:** LOCKED\n",
+        "[D4294967296]",
+    );
+    govctl()
+        .args(["validate", "."])
+        .current_dir(dir)
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains("honors D4294967296"))
+        .stdout(predicate::str::contains("not defined"));
 }
 
 #[test]

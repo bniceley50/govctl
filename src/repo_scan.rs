@@ -15,7 +15,7 @@ use walkdir::WalkDir;
 #[derive(Debug, Clone)]
 pub struct Reference {
     pub raw: String,
-    pub num: u32,
+    pub num: Option<u32>,
     /// Human-readable origin: a relative file path, or `git commit <shorthash>`.
     pub source: String,
     pub line: usize,
@@ -260,7 +260,7 @@ mod tests {
         let raw = "keep D001\nskip D900 govctl:ignore\ngovctl:ignore-start\nD901\nD902\ngovctl:ignore-end\nkeep D002";
         // govctl:ignore-end
         let out = apply_suppression(raw);
-        let nums: Vec<u32> = extract_drefs(&out).iter().map(|r| r.num).collect();
-        assert_eq!(nums, vec![1, 2]);
+        let nums: Vec<Option<u32>> = extract_drefs(&out).iter().map(|r| r.num).collect();
+        assert_eq!(nums, vec![Some(1), Some(2)]);
     }
 }

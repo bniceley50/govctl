@@ -17,7 +17,7 @@ use crate::templates;
 use anyhow::{Context, Result};
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
@@ -179,7 +179,7 @@ pub fn run(root: &Path, strict: bool, format: Format) -> Result<bool> {
         .into_iter()
         .filter(|r| r.raw.len().saturating_sub(1) >= min_id_digits)
         .collect();
-    let referenced_nums: HashSet<u32> = references.iter().map(|r| r.num).collect();
+    let referenced_nums: HashSet<u32> = references.iter().filter_map(|r| r.num).collect();
 
     // Check 3: honored decisions must exist and be LOCKED.
     for h in &honored {
@@ -211,9 +211,14 @@ pub fn run(root: &Path, strict: bool, format: Format) -> Result<bool> {
     }
 
     // Check 4: orphaned references (report each distinct orphan once, at its first site).
-    let mut reported: HashSet<u32> = HashSet::new();
+    let mut reported: HashSet<String> = HashSet::new();
     for r in &references {
-        if !defined_nums.contains(&r.num) && reported.insert(r.num) {
+        let is_orphan = r.num.is_none_or(|n| !defined_nums.contains(&n));
+        let report_key = r
+            .num
+            .map(|n| format!("num:{n}"))
+            .unwrap_or_else(|| format!("raw:{}", r.raw));
+        if is_orphan && reported.insert(report_key) {
             // File references get a line number; git-commit references already carry a hash.
             let is_git = r.source.starts_with("git commit");
             let loc = if is_git {
@@ -234,6 +239,16 @@ pub fn run(root: &Path, strict: bool, format: Format) -> Result<bool> {
     }
 
     // Check 5: supersede-chain integrity.
+    let supersede_map: HashMap<u32, u32> = decisions
+        .iter()
+        .filter_map(|d| {
+            if let Status::Superseded { by: Some(succ) } = &d.status {
+                dnum(succ).map(|n| (d.num, n))
+            } else {
+                None
+            }
+        })
+        .collect();
     for d in &decisions {
         if let Status::Superseded { by } = &d.status {
             match by {
@@ -255,6 +270,16 @@ pub fn run(root: &Path, strict: bool, format: Format) -> Result<bool> {
                                 "{} '{}' is SUPERSEDED by {}, which does not exist",
                                 d.id, d.title, succ
                             ),
+                            decision_id: Some(d.id.clone()),
+                            source: Some("DECISIONS.md".to_string()),
+                            line: None,
+                            suggested_fix_kind: FixKind::NameSuccessor,
+                        });
+                    } else if supersede_cycle_start(d.num, &supersede_map).is_some() {
+                        findings.push(Finding {
+                            severity: Severity::Error,
+                            code: Code::BrokenSupersedeChain,
+                            message: format!("{} '{}' is part of a supersede cycle", d.id, d.title),
                             decision_id: Some(d.id.clone()),
                             source: Some("DECISIONS.md".to_string()),
                             line: None,
@@ -358,7 +383,19 @@ pub fn run(root: &Path, strict: bool, format: Format) -> Result<bool> {
 
 /// Parse the numeric value out of a `D###` token (the id for decision seven yields `Some(7)`).
 fn dnum(s: &str) -> Option<u32> {
-    decisions::extract_drefs(s).first().map(|r| r.num)
+    decisions::extract_drefs(s).first().and_then(|r| r.num)
+}
+
+fn supersede_cycle_start(start: u32, supersede_map: &HashMap<u32, u32>) -> Option<u32> {
+    let mut seen = HashSet::new();
+    let mut cur = start;
+    while let Some(&next) = supersede_map.get(&cur) {
+        if !seen.insert(cur) {
+            return Some(cur);
+        }
+        cur = next;
+    }
+    None
 }
 
 fn status_label(status: &Status) -> String {

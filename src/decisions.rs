@@ -32,7 +32,7 @@ pub struct Decision {
 #[derive(Debug, Clone)]
 pub struct DRef {
     pub raw: String,
-    pub num: u32,
+    pub num: Option<u32>,
     pub line: usize,
 }
 
@@ -93,7 +93,7 @@ pub fn extract_drefs(text: &str) -> Vec<DRef> {
                 }
                 if prev_ok && j > i + 1 {
                     let raw: String = chars[i..j].iter().collect();
-                    let num: u32 = raw[1..].parse().unwrap_or(0);
+                    let num = raw[1..].parse().ok();
                     refs.push(DRef {
                         raw,
                         num,
@@ -183,24 +183,29 @@ fn parse_heading(text: &str) -> Option<Decision> {
 
 /// Parse a `- **Status:** LOCKED` style line into a `Status`, or `None` if it isn't a status line.
 fn parse_status_line(line: &str) -> Option<Status> {
-    let lower = line.to_lowercase();
-    if !lower.contains("status") {
-        return None;
-    }
-    if lower.contains("superseded") {
+    let value = status_value(line)?;
+    let lower = value.to_lowercase();
+    if lower.starts_with("superseded") {
         // Look for "by D###".
-        let by = extract_drefs(line).into_iter().next().map(|r| r.raw);
+        let by = extract_drefs(&value).into_iter().next().map(|r| r.raw);
         return Some(Status::Superseded { by });
     }
-    if lower.contains("locked") {
-        return Some(Status::Locked);
+    match lower.as_str() {
+        "locked" => Some(Status::Locked),
+        "proposed" => Some(Status::Proposed),
+        _ => Some(Status::Other(value)),
     }
-    if lower.contains("proposed") {
-        return Some(Status::Proposed);
+}
+
+fn status_value(line: &str) -> Option<String> {
+    if !line.to_lowercase().contains("status") {
+        return None;
     }
-    // A status line we don't model - capture the value after the colon.
     let value = line.rsplit(':').next().unwrap_or("").trim();
-    Some(Status::Other(value.to_string()))
+    let value = value
+        .trim_matches(|c: char| c.is_whitespace() || c == '*' || c == '_')
+        .trim();
+    Some(value.to_string())
 }
 
 #[cfg(test)]
@@ -281,6 +286,34 @@ Template instructions:
     }
 
     #[test]
+    fn status_parser_rejects_negated_locked_values() {
+        assert_eq!(
+            parse_status_line("Status: unlocked"),
+            Some(Status::Other("unlocked".to_string()))
+        );
+        assert_eq!(
+            parse_status_line("Status: not locked"),
+            Some(Status::Other("not locked".to_string()))
+        );
+        assert_eq!(
+            parse_status_line("Status: not_locked"),
+            Some(Status::Other("not_locked".to_string()))
+        );
+    }
+
+    #[test]
+    fn status_parser_preserves_markdown_locked_values() {
+        assert_eq!(
+            parse_status_line("- **Status:** LOCKED"),
+            Some(Status::Locked)
+        );
+        assert_eq!(
+            parse_status_line("**Status:** Locked"),
+            Some(Status::Locked)
+        );
+    }
+
+    #[test]
     fn ignores_decisions_inside_html_comments() {
         let d = parse(WITH_COMMENT);
         // Only the real D001 should survive; the example heading in the comment must be skipped.
@@ -293,8 +326,8 @@ Template instructions:
         // govctl:ignore-start
         let refs = extract_drefs("see D207 and 3D and ID3 and D42x");
         // govctl:ignore-end
-        let nums: Vec<u32> = refs.iter().map(|r| r.num).collect();
-        assert_eq!(nums, vec![207, 42]);
+        let nums: Vec<Option<u32>> = refs.iter().map(|r| r.num).collect();
+        assert_eq!(nums, vec![Some(207), Some(42)]);
     }
 
     #[test]
